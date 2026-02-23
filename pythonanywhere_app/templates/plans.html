@@ -1,0 +1,49 @@
+﻿{% extends 'base.html' %}
+{% block title %}Plans | LifePause{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Plan Board</h2>
+  <form method="post" class="inline form-row">
+    <input type="hidden" name="action" value="add" />
+    <input name="title" placeholder="Task title" required />
+    <input type="number" name="estimate_minutes" value="25" min="1" />
+    <input name="tags" placeholder="tags" />
+    <select name="status">
+      <option value="backlog">Backlog</option>
+      <option value="today">Today</option>
+      <option value="done">Done</option>
+      <option value="blocked">Blocked</option>
+    </select>
+    <button class="btn" type="submit">Create</button>
+  </form>
+</section>
+
+<section class="kanban">
+  {% for column in ['backlog','today','done','blocked'] %}
+  <div class="card col">
+    <h3>{{ column|capitalize }} ({{ columns[column]|length }})</h3>
+    {% for t in columns[column] %}
+    <div class="task-item">
+      <div>
+        <strong>{{ t.title }}</strong>
+        <p class="muted sm">{{ t.estimate_minutes }}m · {{ t.tags or 'no-tag' }}</p>
+      </div>
+      <form method="post" class="inline">
+        <input type="hidden" name="action" value="move" />
+        <input type="hidden" name="task_id" value="{{ t.id }}" />
+        <select name="to_status" onchange="this.form.submit()">
+          <option value="backlog" {% if t.status=='backlog' %}selected{% endif %}>Backlog</option>
+          <option value="today" {% if t.status=='today' %}selected{% endif %}>Today</option>
+          <option value="done" {% if t.status=='done' %}selected{% endif %}>Done</option>
+          <option value="blocked" {% if t.status=='blocked' %}selected{% endif %}>Blocked</option>
+        </select>
+      </form>
+    </div>
+    {% else %}
+      <p class="muted">Bo'sh</p>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}
+

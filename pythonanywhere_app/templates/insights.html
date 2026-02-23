@@ -1,0 +1,66 @@
+﻿{% extends 'base.html' %}
+{% block title %}Insights | LifePause{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+{% block content %}
+<section class="stats-grid">
+  <div class="card stat"><p>Bugungi score</p><h3>{{ score }}</h3></div>
+  <div class="card stat"><p>7 kun jami</p><h3>{{ stats.total_week_min }} min</h3></div>
+  <div class="card stat"><p>Avg stress</p><h3>{{ stats.avg_stress }}</h3></div>
+  <div class="card stat"><p>Avg energy</p><h3>{{ stats.avg_energy }}</h3></div>
+</section>
+
+<section class="card">
+  <h2>Recommendation</h2>
+  <p>{{ recommendation }}</p>
+</section>
+
+<section class="split-2">
+  <div class="card"><h3>Work vs Stress</h3><canvas id="workStressChart"></canvas></div>
+  <div class="card"><h3>Energy Balance Trend</h3><canvas id="scoreChart"></canvas></div>
+</section>
+
+<section class="card">
+  <h3>Top Tags</h3>
+  <div class="tag-cloud">
+    {% for t in stats.top_tags %}
+      <span class="badge lg">{{ t.tag }} · {{ t.count }}</span>
+    {% else %}
+      <span class="muted">Tag ma'lumotlari hali yo'q</span>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const trend = {{ stats.trend|tojson }};
+const labels = trend.map(x => x.label);
+const minutes = trend.map(x => x.minutes);
+const stress = trend.map(x => x.stress);
+const score = trend.map(x => x.score);
+
+new Chart(document.getElementById('workStressChart'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      { label: 'Work(min)', data: minutes, backgroundColor: '#1e7f73' },
+      { label: 'Stress', data: stress, backgroundColor: '#f97316' }
+    ]
+  },
+  options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+});
+
+new Chart(document.getElementById('scoreChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{ label: 'Energy Score', data: score, borderColor: '#2f5bea', tension: 0.3, fill: false }]
+  },
+  options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+{% endblock %}
+

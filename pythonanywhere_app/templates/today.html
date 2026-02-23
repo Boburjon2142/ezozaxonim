@@ -1,0 +1,137 @@
+﻿{% extends 'base.html' %}
+{% block title %}Today | LifePause{% endblock %}
+{% block content %}
+<section class="stats-grid">
+  <div class="card stat">
+    <p>Energy Balance</p>
+    <h3>{{ score }}</h3>
+  </div>
+  <div class="card stat">
+    <p>Bugungi focus</p>
+    <h3>{{ total_today }} min</h3>
+  </div>
+  <div class="card stat">
+    <p>Done tasks</p>
+    <h3>{{ done_today }}</h3>
+  </div>
+  <div class="card stat">
+    <p>Adaptive hint</p>
+    <h4>{{ break_hint }}</h4>
+  </div>
+</section>
+
+<section class="split-2">
+  <div class="card">
+    <h2>Smart Focus Timer</h2>
+    <p class="muted">Rule: {{ rule.focus_min }} / {{ rule.break_min }} (long {{ rule.long_break_min }} every {{ rule.long_break_every }})</p>
+    <div class="timer-box">
+      <div class="timer-config">
+        <label>Focus (min)
+          <input id="focusMinInput" type="number" min="10" max="120" value="{{ rule.focus_min }}" />
+        </label>
+        <label>Break (min)
+          <input id="breakMinInput" type="number" min="3" max="45" value="{{ rule.break_min }}" />
+        </label>
+        <label>Long break (min)
+          <input id="longBreakMinInput" type="number" min="10" max="60" value="{{ rule.long_break_min }}" />
+        </label>
+        <label>Long break every
+          <input id="longBreakEveryInput" type="number" min="2" max="10" value="{{ rule.long_break_every }}" />
+        </label>
+      </div>
+      <div id="timerDisplay" class="timer">{{ "%02d:00"|format(rule.focus_min) }}</div>
+      <p id="burnoutAlert" class="danger-text" style="display:none;">You are in the burnout danger zone. Take a short break.</p>
+      <div class="timer-actions">
+        <button class="btn" type="button" onclick="LP.startPomodoroFromInputs()">Start</button>
+        <button class="btn ghost" type="button" onclick="LP.pausePomodoro()">Pause</button>
+        <button class="btn dark" type="button" onclick="LP.resetPomodoroFromInputs()">Reset</button>
+      </div>
+      <form method="post" action="{{ url_for('api_session') }}" class="inline" onsubmit="return LP.submitTimerMinutes(event)">
+        <input type="hidden" name="minutes" id="timerMinutes" value="25" />
+        <input type="hidden" name="tag" value="focus" />
+        <input type="hidden" name="source" value="timer" />
+        <button class="btn" type="submit">Save elapsed session</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Daily Check-in</h2>
+    <form method="post" class="grid form-grid">
+      <input type="hidden" name="action" value="checkin" />
+      <label>Energy (1-5)<input type="number" min="1" max="5" name="energy" value="{{ check.energy if check else 3 }}" /></label>
+      <label>Stress (1-5)<input type="number" min="1" max="5" name="stress" value="{{ check.stress if check else 3 }}" /></label>
+      <label>Mood (1-5)<input type="number" min="1" max="5" name="mood" value="{{ check.mood if check else 3 }}" /></label>
+      <label>Sleep (1-5)<input type="number" min="1" max="5" name="sleep" value="{{ check.sleep if check else 3 }}" /></label>
+      <textarea name="note" placeholder="Qisqa izoh">{{ check.note if check else '' }}</textarea>
+      <button class="btn" type="submit">Save check-in</button>
+    </form>
+  </div>
+</section>
+
+<section class="split-2">
+  <div class="card">
+    <h2>Today's Plan</h2>
+    <form method="post" class="grid form-grid">
+      <input type="hidden" name="action" value="save_plan" />
+      <input name="top1" placeholder="Top 1" value="{{ plan.top1 if plan else '' }}" />
+      <input name="top2" placeholder="Top 2" value="{{ plan.top2 if plan else '' }}" />
+      <input name="top3" placeholder="Top 3" value="{{ plan.top3 if plan else '' }}" />
+      <textarea name="reflection" placeholder="Reflection">{{ plan.reflection if plan else '' }}</textarea>
+      <button class="btn" type="submit">Save plan</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Task Journal</h2>
+    <form method="post" class="inline form-row">
+      <input type="hidden" name="action" value="add_task" />
+      <input name="task_title" placeholder="Yangi task" required />
+      <input type="number" name="estimate_minutes" value="25" min="1" />
+      <input name="tags" placeholder="tag" />
+      <button class="btn" type="submit">Add</button>
+    </form>
+
+    <div class="task-list">
+      {% for t in tasks %}
+      <div class="task-item">
+        <div>
+          <strong>{{ t.title }}</strong>
+          <p class="muted sm">{{ t.estimate_minutes }}m · {{ t.tags or 'no-tag' }}</p>
+        </div>
+        <form method="post" class="inline">
+          <input type="hidden" name="action" value="task_status" />
+          <input type="hidden" name="task_id" value="{{ t.id }}" />
+          <select name="status" onchange="this.form.submit()">
+            <option value="backlog" {% if t.status=='backlog' %}selected{% endif %}>Backlog</option>
+            <option value="today" {% if t.status=='today' %}selected{% endif %}>Today</option>
+            <option value="done" {% if t.status=='done' %}selected{% endif %}>Done</option>
+            <option value="blocked" {% if t.status=='blocked' %}selected{% endif %}>Blocked</option>
+          </select>
+        </form>
+      </div>
+      {% else %}
+      <p class="muted">Tasklar hozircha yo'q.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Recent Sessions</h2>
+  <table>
+    <tr><th>Start</th><th>Min</th><th>Tag</th><th>Source</th></tr>
+    {% for s in sessions %}
+      <tr>
+        <td>{{ s.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ s.duration_minutes }}</td>
+        <td><span class="badge">{{ s.tag }}</span></td>
+        <td>{{ s.source }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4">Session yo'q</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}
+

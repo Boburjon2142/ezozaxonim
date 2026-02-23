@@ -1,0 +1,26 @@
+﻿{% extends 'base.html' %}
+{% block title %}LifePause | Sustainable Productivity{% endblock %}
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="kicker">ANTI-BURNOUT RHYTHM SYSTEM</p>
+    <h1>Energiya va ish ritmini balansda ushlang.</h1>
+    <p class="muted">LifePause fokus, break, check-in va rejalashtirishni bitta oqimga birlashtiradi. Natija: kamroq stress, ko'proq barqaror natija.</p>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('signup') }}">Bepul boshlash</a>
+      <a class="btn ghost" href="{{ url_for('login') }}">Kirish</a>
+    </div>
+  </div>
+  <div class="card glass">
+    <h3>Asosiy imkoniyatlar</h3>
+    <ul class="list">
+      <li>Energy balance score</li>
+      <li>60-soniyalik daily check-in</li>
+      <li>Pomodoro + adaptive break tavsiya</li>
+      <li>Kanban-style plan board</li>
+      <li>Insights va CSV export</li>
+    </ul>
+  </div>
+</section>
+{% endblock %}
+

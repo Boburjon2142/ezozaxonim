@@ -1,0 +1,16 @@
+﻿{% extends 'base.html' %}
+{% block title %}Signup | LifePause{% endblock %}
+{% block content %}
+<section class="auth-wrap">
+  <div class="card auth-card">
+    <h2>Ro'yxatdan o'tish</h2>
+    <form method="post" class="grid form-grid">
+      <label>To'liq ism<input name="full_name" placeholder="Ali Valiyev" /></label>
+      <label>Email<input name="email" type="email" placeholder="you@example.com" required /></label>
+      <label>Parol<input name="password" type="password" placeholder="kamida 6 belgi" required /></label>
+      <button class="btn" type="submit">Account yaratish</button>
+    </form>
+  </div>
+</section>
+{% endblock %}
+

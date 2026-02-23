@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 42 35% 96%;
+  --foreground: 210 18% 15%;
+  --card: 0 0% 100%;
+  --muted: 42 20% 90%;
+  --primary: 166 56% 32%;
+  --accent: 24 85% 52%;
+}
+
+body {
+  @apply bg-background text-foreground font-sans;
+}
+
+.surface {
+  @apply rounded-2xl border border-black/5 bg-card shadow-sm;
+}

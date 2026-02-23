@@ -1,0 +1,38 @@
+﻿{% extends 'base.html' %}
+{% block title %}Time | LifePause{% endblock %}
+{% block content %}
+<section class="stats-grid">
+  <div class="card stat"><p>Today</p><h3>{{ total_today }} min</h3></div>
+  <div class="card stat"><p>7 kun</p><h3>{{ total_week }} min</h3></div>
+  <div class="card stat"><p>Avg/day</p><h3>{{ (total_week/7)|round(1) }} min</h3></div>
+  <div class="card stat"><p>Top tags</p><h4>{% for tag,count in tags.most_common(3) %}{{ tag }} ({{ count }}) {% endfor %}</h4></div>
+</section>
+
+<section class="card">
+  <h2>Manual session qo'shish</h2>
+  <form method="post" class="inline form-row">
+    <input type="number" name="minutes" value="25" min="1" max="720" />
+    <input name="tag" value="focus" />
+    <select name="source"><option value="manual">manual</option><option value="timer">timer</option></select>
+    <button class="btn" type="submit">Add</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>All sessions</h2>
+  <table>
+    <tr><th>Date</th><th>Minutes</th><th>Tag</th><th>Source</th></tr>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ r.duration_minutes }}</td>
+        <td><span class="badge">{{ r.tag }}</span></td>
+        <td>{{ r.source }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4">Session yo'q</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}
+

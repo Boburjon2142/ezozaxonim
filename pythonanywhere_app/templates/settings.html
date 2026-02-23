@@ -1,0 +1,36 @@
+﻿{% extends 'base.html' %}
+{% block title %}Settings | LifePause{% endblock %}
+{% block content %}
+<section class="split-2">
+  <div class="card">
+    <h2>Profile</h2>
+    <form method="post" class="grid form-grid">
+      <label>Full name<input name="full_name" value="{{ current_user.full_name }}" /></label>
+      <label>Timezone<input name="timezone" value="{{ current_user.timezone }}" /></label>
+      <h3>Break Rules</h3>
+      <label>Focus (min)<input type="number" name="focus_min" value="{{ rule.focus_min }}" min="10" max="90" /></label>
+      <label>Break (min)<input type="number" name="break_min" value="{{ rule.break_min }}" min="3" max="30" /></label>
+      <label>Long break (min)<input type="number" name="long_break_min" value="{{ rule.long_break_min }}" min="10" max="45" /></label>
+      <label>Long break every N cycles<input type="number" name="long_break_every" value="{{ rule.long_break_every }}" min="2" max="8" /></label>
+      <label class="inline"><input type="checkbox" name="adaptive_enabled" {% if rule.adaptive_enabled %}checked{% endif %}/> Adaptive enabled</label>
+      <button class="btn" type="submit">Save settings</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Data & Deploy</h2>
+    <p class="muted">Ma'lumotlarni CSV ko'rinishida export qiling.</p>
+    <a class="btn" href="{{ url_for('export_csv') }}">Export CSV</a>
+
+    <hr />
+    <h3>PythonAnywhere deploy checklist</h3>
+    <ol class="list num">
+      <li>Manual Flask app yarating</li>
+      <li>Virtualenv + pip install requirements</li>
+      <li>WSGI faylini `from app import app as application` ga ulang</li>
+      <li>Reload qiling</li>
+    </ol>
+  </div>
+</section>
+{% endblock %}
+
