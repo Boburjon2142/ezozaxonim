@@ -87,6 +87,7 @@
     <form method="post" class="inline form-row">
       <input type="hidden" name="action" value="add_task" />
       <input name="task_title" placeholder="Yangi task" required />
+      <input type="time" name="scheduled_time" title="Start time" />
       <input type="number" name="estimate_minutes" value="25" min="1" />
       <input name="tags" placeholder="tag" />
       <button class="btn" type="submit">Add</button>
@@ -97,7 +98,7 @@
       <div class="task-item">
         <div>
           <strong>{{ t.title }}</strong>
-          <p class="muted sm">{{ t.estimate_minutes }}m · {{ t.tags or 'no-tag' }}</p>
+          <p class="muted sm">{{ t.scheduled_time or '--:--' }} · {{ t.estimate_minutes }}m · {{ t.tags or 'no-tag' }}</p>
         </div>
         <form method="post" class="inline">
           <input type="hidden" name="action" value="task_status" />
@@ -118,6 +119,23 @@
 </section>
 
 <section class="card">
+  <h2>Daily Timeline</h2>
+  <div class="timeline">
+    {% for t in timeline_tasks %}
+      <div class="timeline-item">
+        <div class="time-pill">{{ t.scheduled_time }}</div>
+        <div>
+          <strong>{{ t.title }}</strong>
+          <p class="muted sm">{{ t.status|capitalize }} · {{ t.estimate_minutes }}m</p>
+        </div>
+      </div>
+    {% else %}
+      <p class="muted">Vaqt bilan reja qo'shilmagan. Task qo'shganda vaqt belgilang.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card">
   <h2>Recent Sessions</h2>
   <table>
     <tr><th>Start</th><th>Min</th><th>Tag</th><th>Source</th></tr>
@@ -133,5 +151,15 @@
     {% endfor %}
   </table>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  LP.initScheduleNotifications(
+    {{ timeline_tasks|map(attribute='id')|list|tojson }},
+    {{ timeline_tasks|map(attribute='title')|list|tojson }},
+    {{ timeline_tasks|map(attribute='scheduled_time')|list|tojson }}
+  );
+</script>
 {% endblock %}
 

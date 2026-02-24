@@ -44,6 +44,7 @@ class Task(db.Model):
     status = db.Column(db.String(30), default="today")
     estimate_minutes = db.Column(db.Integer, default=25)
     tags = db.Column(db.String(255), default="")
+    scheduled_time = db.Column(db.String(5), default="")  # HH:MM
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -117,6 +118,12 @@ def ensure_schema_compat() -> None:
         if "source" not in cols:
             cursor.execute("ALTER TABLE time_session ADD COLUMN source VARCHAR(30) DEFAULT 'manual'")
             conn.commit()
+
+        cursor.execute("PRAGMA table_info(task)")
+        task_cols = [row[1] for row in cursor.fetchall()]
+        if "scheduled_time" not in task_cols:
+            cursor.execute("ALTER TABLE task ADD COLUMN scheduled_time VARCHAR(5) DEFAULT ''")
+            conn.commit()
     finally:
         conn.close()
 
@@ -136,6 +143,24 @@ def safe_int(value: str, fallback: int, min_v: int = 1, max_v: int = 999) -> int
         return max(min_v, min(max_v, parsed))
     except (TypeError, ValueError):
         return fallback
+
+
+def safe_hhmm(value: str | None) -> str:
+    if not value:
+        return ""
+    raw = value.strip()
+    try:
+        datetime.strptime(raw, "%H:%M")
+        return raw
+    except ValueError:
+        return ""
+
+
+def sort_tasks_by_time(tasks: list[Task]) -> list[Task]:
+    return sorted(
+        tasks,
+        key=lambda t: ((t.scheduled_time or "") == "", t.scheduled_time or "99:99", t.created_at),
+    )
 
 
 def energy_balance_for_day(user_id: int, day: date) -> float:
@@ -353,6 +378,7 @@ def register_routes(app: Flask) -> None:
                             status="today",
                             estimate_minutes=safe_int(request.form.get("estimate_minutes"), 25, 1, 480),
                             tags=request.form.get("tags", "").strip()[:255],
+                            scheduled_time=safe_hhmm(request.form.get("scheduled_time")),
                         )
                     )
                     db.session.commit()
@@ -384,7 +410,8 @@ def register_routes(app: Flask) -> None:
             .limit(12)
             .all()
         )
-        tasks = Task.query.filter_by(user_id=current_user.id, plan_date=today_date).order_by(Task.created_at.desc()).all()
+        tasks = sort_tasks_by_time(Task.query.filter_by(user_id=current_user.id, plan_date=today_date).all())
+        timeline_tasks = [t for t in tasks if t.status in {"today", "backlog"} and t.scheduled_time]
 
         total_today = sum(s.duration_minutes for s in sessions if s.started_at.date() == today_date)
         done_today = sum(1 for t in tasks if t.status == "done")
@@ -397,6 +424,7 @@ def register_routes(app: Flask) -> None:
             check=check,
             sessions=sessions,
             tasks=tasks,
+            timeline_tasks=timeline_tasks,
             score=score,
             total_today=total_today,
             done_today=done_today,
@@ -420,6 +448,7 @@ def register_routes(app: Flask) -> None:
                             status=request.form.get("status", "backlog"),
                             estimate_minutes=safe_int(request.form.get("estimate_minutes"), 25, 1, 480),
                             tags=request.form.get("tags", "").strip()[:255],
+                            scheduled_time=safe_hhmm(request.form.get("scheduled_time")),
                         )
                     )
                     db.session.commit()
@@ -433,12 +462,12 @@ def register_routes(app: Flask) -> None:
                         db.session.commit()
             return redirect(url_for("plans"))
 
-        all_tasks = Task.query.filter_by(user_id=current_user.id).order_by(Task.created_at.desc()).limit(200).all()
+        all_tasks = sort_tasks_by_time(Task.query.filter_by(user_id=current_user.id).order_by(Task.created_at.desc()).limit(200).all())
         columns = {
-            "backlog": [t for t in all_tasks if t.status == "backlog"],
-            "today": [t for t in all_tasks if t.status == "today"],
-            "done": [t for t in all_tasks if t.status == "done"],
-            "blocked": [t for t in all_tasks if t.status == "blocked"],
+            "backlog": sort_tasks_by_time([t for t in all_tasks if t.status == "backlog"]),
+            "today": sort_tasks_by_time([t for t in all_tasks if t.status == "today"]),
+            "done": sort_tasks_by_time([t for t in all_tasks if t.status == "done"]),
+            "blocked": sort_tasks_by_time([t for t in all_tasks if t.status == "blocked"]),
         }
         return render_template("plans.html", columns=columns)
 
@@ -513,7 +542,7 @@ def register_routes(app: Flask) -> None:
             writer.writerow(["checkin", c.check_date.isoformat(), c.energy, c.stress, c.mood])
 
         for t in Task.query.filter_by(user_id=current_user.id).order_by(Task.created_at.desc()).limit(500):
-            writer.writerow(["task", t.plan_date.isoformat(), t.title, t.status, t.estimate_minutes])
+            writer.writerow(["task", t.plan_date.isoformat(), t.title, t.status, f"{t.estimate_minutes}m @{t.scheduled_time or '-'}"])
 
         return Response(
             output.getvalue(),

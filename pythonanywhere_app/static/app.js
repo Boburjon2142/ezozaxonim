@@ -8,6 +8,7 @@
   let currentLongBreak = 15;
   let longBreakEvery = 4;
   let totalFocusElapsed = 0;
+  const notifiedScheduleKeys = new Set();
 
   const display = () => document.getElementById("timerDisplay");
   const timerMinutesInput = () => document.getElementById("timerMinutes");
@@ -40,6 +41,27 @@
     }
   }
 
+  function playChime() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "sine";
+      o.frequency.value = 880;
+      g.gain.value = 0.001;
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      o.stop(ctx.currentTime + 0.36);
+    } catch (_) {
+      // best-effort notification sound
+    }
+  }
+
   function switchMode() {
     if (isBreak) {
       isBreak = false;
@@ -54,6 +76,7 @@
       postBreakEvent("shown");
       const msg = "You are in the burnout danger zone. Take a short break.";
       notifyBreak(msg);
+      playChime();
       if (burnoutAlert()) {
         burnoutAlert().textContent = msg;
         burnoutAlert().style.display = "block";
@@ -132,6 +155,45 @@
     return false;
   }
 
+  function initScheduleNotifications(ids, titles, times) {
+    if (!Array.isArray(ids) || !Array.isArray(titles) || !Array.isArray(times)) return;
+    const todayKey = new Date().toISOString().slice(0, 10);
+
+    if (Notification && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    const checkNow = () => {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      const nowHHMM = `${hh}:${mm}`;
+
+      for (let i = 0; i < ids.length; i += 1) {
+        const id = ids[i];
+        const title = titles[i];
+        const time = times[i];
+        if (!time) continue;
+
+        const key = `${todayKey}:${id}:${time}`;
+        if (notifiedScheduleKeys.has(key)) continue;
+
+        if (time === nowHHMM) {
+          notifiedScheduleKeys.add(key);
+          const msg = `Planned task time: ${title}`;
+          if (Notification && Notification.permission === "granted") {
+            new Notification("LifePause Plan Reminder", { body: msg });
+          }
+          playChime();
+          alert(msg);
+        }
+      }
+    };
+
+    checkNow();
+    setInterval(checkNow, 20000);
+  }
+
   return {
     startPomodoro,
     startPomodoroFromInputs,
@@ -139,6 +201,6 @@
     resetPomodoro,
     resetPomodoroFromInputs,
     submitTimerMinutes,
+    initScheduleNotifications,
   };
 })();
-

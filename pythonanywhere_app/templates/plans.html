@@ -6,6 +6,7 @@
   <form method="post" class="inline form-row">
     <input type="hidden" name="action" value="add" />
     <input name="title" placeholder="Task title" required />
+    <input type="time" name="scheduled_time" title="Start time" />
     <input type="number" name="estimate_minutes" value="25" min="1" />
     <input name="tags" placeholder="tags" />
     <select name="status">
@@ -26,7 +27,7 @@
     <div class="task-item">
       <div>
         <strong>{{ t.title }}</strong>
-        <p class="muted sm">{{ t.estimate_minutes }}m · {{ t.tags or 'no-tag' }}</p>
+        <p class="muted sm">{{ t.scheduled_time or '--:--' }} · {{ t.estimate_minutes }}m · {{ t.tags or 'no-tag' }}</p>
       </div>
       <form method="post" class="inline">
         <input type="hidden" name="action" value="move" />
